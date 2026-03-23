@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espacios de Estados</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        p {
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            max-width: 900px;
+            padding: 20px;
+        }
+        .card {
+            background-color: #3498db;
+            color: transparent;
+            width: 200px;
+            height: 120px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+        .card.flipped {
+            background-color: #fff;
+            color: #2c3e50;
+            border: 2px solid #3498db;
+            cursor: default;
+        }
+        .card.matched {
+            background-color: #2ecc71;
+            color: #fff;
+            border: 2px solid #27ae60;
+            cursor: default;
+        }
+        #mensaje {
+            margin-top: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #e74c3c;
+            height: 30px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #1a252f;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Memorama de Inteligencia Artificial</h1>
+    <p>Encuentra el concepto con su definición o ejemplo correcto</p>
+
+    <div class="grid" id="grid"></div>
+    <div id="mensaje"></div>
+    <button onclick="reiniciarJuego()">Reiniciar Juego</button>
+
+    <script>
+        const cartasArray = [
+            { id: 1, texto: 'Espacio de Estados' },
+            { id: 1, texto: 'Representación matemática de todas las configuraciones posibles' },
+            { id: 2, texto: 'Espacio Determinístico' },
+            { id: 2, texto: 'Entorno donde el resultado de una acción es 100% predecible' },
+            { id: 3, texto: 'Espacio No Determinístico' },
+            { id: 3, texto: 'Entorno donde el resultado depende del azar o factores externos' },
+            { id: 4, texto: 'Secuencia de acciones' },
+            { id: 4, texto: 'Plan de ruta fija desde el inicio hasta la meta' },
+            { id: 5, texto: 'Árbol de decisión' },
+            { id: 5, texto: 'Plan de contingencia (Si pasa X, hago Y)' },
+            { id: 6, texto: 'Abstracción' },
+            { id: 6, texto: 'Eliminar los detalles irrelevantes del problema real' }
+        ];
+
+        let cartasVolteadas = [];
+        let cartasAcertadas = 0;
+        let bloqueoTablero = false;
+
+        // Nuevo algoritmo de mezcla perfecta (Fisher-Yates)
+        function mezclarCartas(array) {
+            let arrayMezclado = [...array]; // Hacemos una copia para no dañar el original
+            for (let i = arrayMezclado.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                // Intercambiamos las posiciones
+                [arrayMezclado[i], arrayMezclado[j]] = [arrayMezclado[j], arrayMezclado[i]];
+            }
+            return arrayMezclado;
+        }
+
+        function crearTablero() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            
+            // Llamamos a nuestra nueva función de mezcla
+            const cartasMezcladas = mezclarCartas(cartasArray);
+
+            cartasMezcladas.forEach((carta) => {
+                const elementoCarta = document.createElement('div');
+                elementoCarta.classList.add('card');
+                elementoCarta.dataset.id = carta.id;
+                elementoCarta.innerText = carta.texto;
+                elementoCarta.addEventListener('click', voltearCarta);
+                grid.appendChild(elementoCarta);
+            });
+        }
+
+        function voltearCarta() {
+            if (bloqueoTablero) return;
+            if (this === cartasVolteadas[0]) return;
+            if (this.classList.contains('matched')) return;
+
+            this.classList.add('flipped');
+            cartasVolteadas.push(this);
+
+            if (cartasVolteadas.length === 2) {
+                verificarPar();
+            }
+        }
+
+        function verificarPar() {
+            bloqueoTablero = true;
+            let esPar = cartasVolteadas[0].dataset.id === cartasVolteadas[1].dataset.id;
+
+            if (esPar) {
+                deshabilitarCartas();
+                cartasAcertadas += 2;
+                if (cartasAcertadas === cartasArray.length) {
+                    document.getElementById('mensaje').innerText = '¡Felicidades! Completaron todos los conceptos. 🎉';
+                }
+            } else {
+                desvoltearCartas();
+            }
+        }
+
+        function deshabilitarCartas() {
+            cartasVolteadas[0].classList.add('matched');
+            cartasVolteadas[1].classList.add('matched');
+            resetearVariables();
+        }
+
+        function desvoltearCartas() {
+            setTimeout(() => {
+                cartasVolteadas[0].classList.remove('flipped');
+                cartasVolteadas[1].classList.remove('flipped');
+                resetearVariables();
+            }, 1500);
+        }
+
+        function resetearVariables() {
+            cartasVolteadas = [];
+            bloqueoTablero = false;
+        }
+
+        function reiniciarJuego() {
+            cartasAcertadas = 0;
+            document.getElementById('mensaje').innerText = '';
+            crearTablero();
+        }
+
+        // Iniciar el juego
+        crearTablero();
+    </script>
+</body>
+</html>
